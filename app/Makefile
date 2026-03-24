@@ -32,7 +32,3 @@ lint-fix:
 
 test:
 	NODE_ENV=test npm test -s
-
-ci:
- 	@echo "Running tests with Docker Compose..."
-	docker run -p 8080:8080 -e NODE_ENV=development morner01/devops-for-developers-project-74 make dev
