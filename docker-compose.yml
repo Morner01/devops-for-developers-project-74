@@ -1,102 +1,39 @@
+version: '3.8'
+
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:latest
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: blog_development
+      POSTGRES_DB: blog_test
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  postgres-test:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: blog_test
-    ports:
-      - "5433:5432"
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    profiles:
-      - test
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
-    ports:
-      - "8080:8080"
-    image: morner01/devops-for-developers-project-74:latest
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/blog_development
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=blog_development
+    build: .
     depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  app-test:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
+      - postgres
     environment:
-      - NODE_ENV=test
-      - DATABASE_URL=postgres://postgres:postgres@postgres-test:5432/blog_test
-      - DB_HOST=postgres-test
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=blog_test
-    depends_on:
-      postgres-test:
-        condition: service_healthy
-    networks:
-      - app-network
-    profiles:
-      - test
-    command: npm test
-
-  caddy:
-    image: caddy:latest
-    ports:
-      - "80:80"
-      - "443:443"
+      NODE_ENV: test
+      TEST_DB_USER: postgres
+      TEST_DB_PASSWORD: postgres
+      TEST_DB_NAME: blog_test
+      TEST_DB_HOST: postgres
+      TEST_DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: blog_production
+      DB_HOST: postgres
+      DB_PORT: 5432
     volumes:
-      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      app:
-        condition: service_started
+      - ./app:/app
     networks:
       - app-network
-    restart: unless-stopped
-    profiles:
-      - production
 
 networks:
   app-network:
@@ -104,5 +41,3 @@ networks:
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
