@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: your_user
-      POSTGRES_PASSWORD: your_password
-      POSTGRES_DB: your_database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blog_development
     ports:
       - "5432:5432"
     volumes:
@@ -12,11 +12,30 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U your_user"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  postgres-test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blog_test
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    profiles:
+      - test
 
   app:
     build:
@@ -27,18 +46,39 @@ services:
     image: morner01/devops-for-developers-project-74:latest
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgres://your_user:your_password@postgres:5432/your_database
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/blog_development
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=your_user
-      - DB_PASSWORD=your_password
-      - DB_NAME=your_database
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=blog_development
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
+
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgres://postgres:postgres@postgres-test:5432/blog_test
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=blog_test
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    networks:
+      - app-network
+    profiles:
+      - test
+    command: npm test
 
   caddy:
     image: caddy:latest
@@ -55,6 +95,8 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    profiles:
+      - production
 
 networks:
   app-network:
