@@ -1,4 +1,23 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: your_user
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: your_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U your_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -6,6 +25,20 @@ services:
     ports:
       - "8080:8080"
     image: morner01/devops-for-developers-project-74:latest
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://your_user:your_password@postgres:5432/your_database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=your_user
+      - DB_PASSWORD=your_password
+      - DB_NAME=your_database
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
 
   caddy:
     image: caddy:latest
@@ -13,12 +46,21 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - app
+      app:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
+  postgres_data:
   caddy_data:
   caddy_config:

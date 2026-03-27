@@ -2,27 +2,27 @@ require('dotenv').config();
 
 module.exports = {
   development: {
-    dialect: 'sqlite',
-    storage: './database.sqlite',
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    database: process.env.DB_NAME || 'blog_development',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: console.log
   },
   production: {
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    database: process.env.DATABASE_NAME,
-    username: process.env.DATABASE_USERNAME,
-    password: process.env.DATABASE_PASSWORD,
-    port: process.env.DATABASE_PORT,
-    host: process.env.DATABASE_HOST,
-  },
-  test: {
-    dialect: 'sqlite',
-    storage: './database.test.sqlite',
-  },
-  // test: {
-  //   dialect: 'postgres',
-  //   database: process.env.DATABASE_NAME,
-  //   username: process.env.DATABASE_USERNAME,
-  //   password: process.env.DATABASE_PASSWORD,
-  //   port: process.env.DATABASE_PORT,
-  //   host: process.env.DATABASE_HOST,
-  // },
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.DB_SSL === 'true' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    }
+  }
 };
