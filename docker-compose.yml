@@ -1,75 +1,48 @@
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: blog_test
-    ports:
-      - "8080:8080"
-    image: morner01/devops-for-developers-project-74:latest
-    environment:
-      - DATABASE_NAME=${DATABASE_NAME}
-      - DATABASE_USERNAME=${DATABASE_USERNAME}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
-      - DATABASE_PORT=${DATABASE_PORT}
-      - DATABASE_HOST=${DATABASE_HOST}
-    depends_on:
-      db:
-        condition: service_healthy
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=${DATABASE_NAME}
-      - POSTGRES_USER=${DATABASE_USERNAME}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  caddy:
-    image: caddy:latest
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
-
-  app:
-    build: .
-    depends_on:
-      - postgres
-    environment:
-      NODE_ENV: test
-      TEST_DB_USER: postgres
-      TEST_DB_PASSWORD: postgres
-      TEST_DB_NAME: blog_test
-      TEST_DB_HOST: postgres
-      TEST_DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: blog_production
-      DB_HOST: postgres
-      DB_PORT: 5432
-    volumes:
-      - ./app:/app
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
-
-volumes:
-  caddy_data:
-  caddy_config:
+services: 
+  app: 
+    build: 
+      context: . 
+      dockerfile: Dockerfile.production 
+    ports: 
+      - "8080:8080" 
+    image: morner01/devops-for-developers-project-74:latest 
+    environment: 
+      - DATABASE_NAME=${DATABASE_NAME} 
+      - DATABASE_USERNAME=${DATABASE_USERNAME} 
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD} 
+      - DATABASE_PORT=${DATABASE_PORT} 
+      - DATABASE_HOST=${DATABASE_HOST} 
+    depends_on: 
+      db: 
+        condition: service_healthy 
+ 
+  db: 
+    image: postgres:15-alpine 
+    environment: 
+      - POSTGRES_DB=${DATABASE_NAME} 
+      - POSTGRES_USER=${DATABASE_USERNAME} 
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD} 
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data 
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"] 
+      interval: 5s 
+      timeout: 5s 
+      retries: 10 
+ 
+  caddy: 
+    image: caddy:latest 
+    ports: 
+      - "80:80" 
+      - "443:443" 
+    volumes: 
+      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile 
+      - caddy_data:/data 
+      - caddy_config:/config 
+    depends_on: 
+      - app 
+ 
+volumes: 
+  caddy_data: 
+  caddy_config: 
   postgres_data:
