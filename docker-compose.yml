@@ -1,8 +1,12 @@
+version: '3.8'
+
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blog_test
     ports:
       - "8080:8080"
     image: morner01/devops-for-developers-project-74:latest
@@ -36,11 +40,34 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  app:
+    build: .
     depends_on:
-      - app
+      - postgres
+    environment:
+      NODE_ENV: test
+      TEST_DB_USER: postgres
+      TEST_DB_PASSWORD: postgres
+      TEST_DB_NAME: blog_test
+      TEST_DB_HOST: postgres
+      TEST_DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: blog_production
+      DB_HOST: postgres
+      DB_PORT: 5432
+    volumes:
+      - ./app:/app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   caddy_data:

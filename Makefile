@@ -10,6 +10,7 @@ dev:
 	docker compose up
 
 ci:
+	docker build -t app-test -f Dockerfile .
 	make test
 
 build:
